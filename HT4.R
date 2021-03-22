@@ -2,6 +2,7 @@ setwd("C:/Users/Zephyrus/Documents/U/7mo Semestre/Mineria de Datos/HT4-Mineria")
 library(ModelMetrics)
 library(corrplot)
 library(nortest)
+library(caret)
 
 houses = read.csv('train.csv')
 houses[is.na(houses)]<-0
@@ -44,8 +45,8 @@ corCuant12$SalePrice<-NULL
 cuantHouses<-cbind(corCuant12,corCuantHouses3)
 M<-cor(cuantHouses)
 corrplot.mixed(M, upper = "square")
-cuantHouses$TotalBsmtSF<-NULL
-cuantHouses$GarageCars<-NULL
+cuantHouses$BsmtFinSF1<-NULL
+cuantHouses$YearBuilt<-NULL
 cuantHouses$GrLivArea<-NULL
 
 #Conjuntos de entrenamiento y prueba
@@ -56,19 +57,19 @@ trainRowsNumber<-sample(1:nrow(houses),porciento*nrow(houses))
 training<-cuantHouses[trainRowsNumber,]
 test<-cuantHouses[-trainRowsNumber,]
 
+
 #Regresion Lineal Multiple prediciendo el precio de las casas
 modeloreg<-lm(SalePrice~., data = training)
 summary(modeloreg)
 
 pred <- predict(modeloreg, newdata = test)
 test$prediccion <- round(pred,0)
-plot(test$SalePrice, test$prediccion)
+plot(main='Comparacion precio real - precio predicho',  xlab='Precio Real', ylab='Prediccion de precio',test$SalePrice, test$prediccion, col="blue")
 plot(modeloreg)
-
 
 #Errores
 rmse(test$SalePrice, test$prediccion)
-hist(test$prediccion, freq = F)
+hist(test$prediccion, freq = F, main="Normalidad")
 lines(density(test$prediccion))
 lillie.test(test$prediccion)
 
@@ -79,17 +80,26 @@ set.seed(1234)
 trainRowsNumber<-sample(1:nrow(houses),porciento*nrow(houses))
 training<-cuantHouses[trainRowsNumber,]
 test<-cuantHouses[-trainRowsNumber,]
+
+training$SalePrice<-NULL
+test$SalePrice<-NULL
+
+table(test$clasification)
+table(training$clasification)
+
 fitLM<-lm(clasification~., data = training)
 summary(fitLM)
 
 pred <- predict(fitLM, newdata = test)
 test$prediccion <- round(pred,0)
-plot(test$SalePrice, test$prediccion)
 
 rmse(test$clasification, test$prediccion)
 mean(test$prediccion-test$clasification)
 
-cfmCaret <- confusionMatrix(table(test$prediccion,test$clasification))
+cfm_table <- table(test$prediccion, test$clasification)
+cfm_table <- cfm_table[-1,]
+
+cfmCaret <- confusionMatrix(cfm_table)
 cfmCaret
 
 table(test$clasification)
